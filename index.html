@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Overtake Prototype</title>
 <style>
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
   html, body {
     margin: 0; padding: 0; width: 100%; height: 100%;
     background: #05040a;
@@ -18,6 +18,7 @@
     width: 100%;
     max-width: 480px;
     height: 100vh;
+    height: 100dvh;
     margin: 0 auto;
     background: #0a0714;
     overflow: hidden;
@@ -70,7 +71,9 @@
     letter-spacing: 0.5px;
   }
   #staminaWrap {
-    position: absolute; bottom: 26px; left: 16px; right: 16px; height: 10px;
+    position: absolute;
+    bottom: calc(26px + env(safe-area-inset-bottom, 0px));
+    left: 16px; right: 16px; height: 10px;
     background: rgba(255,255,255,0.1);
     border: 1px solid rgba(120,220,255,0.35);
     border-radius: 6px; overflow: hidden; z-index: 5;
@@ -220,6 +223,10 @@
 
 <script>
 (function(){
+  document.addEventListener('contextmenu', e => e.preventDefault());
+  document.addEventListener('selectstart', e => e.preventDefault());
+  document.addEventListener('gesturestart', e => e.preventDefault());
+
   const canvas = document.getElementById('game');
   const ctx = canvas.getContext('2d');
   const wrap = document.getElementById('wrap');
@@ -352,6 +359,9 @@
     initStars();
   }
   window.addEventListener('resize', resize);
+  if (window.visualViewport){
+    window.visualViewport.addEventListener('resize', resize);
+  }
 
   const ROAD_MARGIN = 0.14;
   function laneX(lane){
