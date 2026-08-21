@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Overtake Prototype</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    background: #05040a;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    overflow: hidden;
+    touch-action: none;
+  }
+  #wrap {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    height: 100vh;
+    margin: 0 auto;
+    background: #0a0714;
+    overflow: hidden;
+  }
+  canvas { display: block; width: 100%; height: 100%; }
+  #hud {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    pointer-events: none;
+    z-index: 5;
+  }
+  .hud-box {
+    background: rgba(10,6,20,0.55);
+    border: 1px solid rgba(255,60,220,0.25);
+    backdrop-filter: blur(4px);
+    border-radius: 10px;
+    padding: 6px 12px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-shadow: 0 0 8px rgba(255,255,255,0.25);
+  }
+  .hud-box small {
+    display: block;
+    font-size: 10px;
+    font-weight: 500;
+    opacity: 0.65;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+  #comboWrap {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%) scale(0.8);
+    z-index: 6;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+  #comboWrap.show { opacity: 1; transform: translateX(-50%) scale(1); }
+  #comboTxt {
+    font-size: 15px; font-weight: 800; color: #ffe14d;
+    text-shadow: 0 0 10px rgba(255,225,77,0.9), 0 0 22px rgba(255,120,220,0.6);
+    letter-spacing: 0.5px;
+  }
+  #staminaWrap {
+    position: absolute; bottom: 26px; left: 16px; right: 16px; height: 10px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(120,220,255,0.35);
+    border-radius: 6px; overflow: hidden; z-index: 5;
+    box-shadow: 0 0 12px rgba(120,220,255,0.15) inset;
+  }
+  #staminaFill {
+    height: 100%; width: 100%;
+    background: linear-gradient(90deg, #00e5ff, #ff2fd0);
+    box-shadow: 0 0 12px rgba(255,60,220,0.7);
+    transition: width 0.05s linear, background 0.2s ease;
+  }
+  #staminaFill.focus {
+    background: linear-gradient(90deg, #7dffb0, #00e5ff);
+    box-shadow: 0 0 16px rgba(120,255,180,0.9);
+  }
+  #holdHint {
+    position: absolute; bottom: 44px; left: 0; right: 0; text-align: center;
+    color: rgba(255,255,255,0.55); font-size: 12px; letter-spacing: 0.8px;
+    text-transform: uppercase; z-index: 4; pointer-events: none;
+  }
+  #focusBadge {
+    position: absolute; bottom: 44px; left: 0; right: 0; text-align: center;
+    color: #7dffb0; font-size: 12px; font-weight: 800; letter-spacing: 1.2px;
+    text-transform: uppercase; text-shadow: 0 0 10px rgba(125,255,176,0.9);
+    z-index: 4; pointer-events: none; opacity: 0; transition: opacity 0.15s ease;
+  }
+  #focusBadge.show { opacity: 1; }
+  #overlay {
+    position: absolute; inset: 0; background: rgba(5,4,10,0.94);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: #fff; text-align: center; z-index: 10; padding: 24px;
+  }
+  #overlay.hidden { display: none; }
+  .screen { display: none; flex-direction: column; align-items: center; width: 100%; }
+  .screen.active { display: flex; }
+  #overlay h1 {
+    font-size: 26px; margin: 0 0 6px; letter-spacing: 1px;
+    background: linear-gradient(90deg, #00e5ff, #ff2fd0);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 0 14px rgba(255,60,220,0.5));
+  }
+  #overlay p { margin: 4px 0; opacity: 0.7; font-size: 13px; max-width: 300px; line-height: 1.5; }
+  .stat-row { display: flex; gap: 22px; margin: 16px 0; }
+  .stat { text-align: center; }
+  .stat .num { font-size: 22px; font-weight: 800; text-shadow: 0 0 10px rgba(0,229,255,0.5); }
+  .stat .lbl { font-size: 10px; opacity: 0.55; text-transform: uppercase; letter-spacing: 0.6px; }
+  .btnRow { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; justify-content: center; }
+  .bigBtn {
+    background: linear-gradient(135deg, #ff2fd0, #00e5ff);
+    border: none; color: #05040a; font-size: 15px; font-weight: 800; letter-spacing: 0.4px;
+    padding: 13px 30px; border-radius: 26px; cursor: pointer;
+    box-shadow: 0 6px 22px rgba(255,47,208,0.45);
+  }
+  .bigBtn:active { transform: scale(0.97); }
+  .ghostBtn {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: #fff; font-size: 14px; font-weight: 700; letter-spacing: 0.4px;
+    padding: 12px 26px; border-radius: 26px; cursor: pointer;
+  }
+  .ghostBtn:active { transform: scale(0.97); }
+  #walletBadge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(255,225,77,0.12); border: 1px solid rgba(255,225,77,0.4);
+    border-radius: 20px; padding: 6px 14px; font-size: 13px; font-weight: 700;
+    color: #ffe14d; margin-bottom: 14px; text-shadow: 0 0 8px rgba(255,225,77,0.6);
+  }
+  #skinGrid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+    width: 100%; max-width: 340px; margin: 6px 0 16px;
+  }
+  .skinTile {
+    border-radius: 14px; padding: 10px 6px; cursor: pointer;
+    border: 2px solid rgba(255,255,255,0.15);
+    background: rgba(255,255,255,0.04);
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    transition: border-color 0.15s ease, transform 0.1s ease;
+  }
+  .skinTile:active { transform: scale(0.96); }
+  .skinTile.equipped { border-color: #7dffb0; box-shadow: 0 0 14px rgba(125,255,176,0.35); }
+  .skinTile.locked { opacity: 0.55; }
+  .skinSwatch {
+    width: 48px; height: 48px; border-radius: 10px;
+    box-shadow: 0 0 12px rgba(0,0,0,0.4) inset;
+  }
+  .skinName { font-size: 11px; font-weight: 700; letter-spacing: 0.3px; }
+  .skinCost { font-size: 10px; opacity: 0.65; }
+  .skinCost.free { color: #7dffb0; }
+  .skinCost.afford { color: #ffe14d; }
+  #flash {
+    position: absolute; inset: 0; background: #ff2f5c; opacity: 0;
+    pointer-events: none; z-index: 8; mix-blend-mode: screen;
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="game"></canvas>
+  <div id="hud">
+    <div class="hud-box"><small>Distance</small><span id="distTxt">0m</span></div>
+    <div class="hud-box"><small>Coins</small><span id="coinTxt">0</span></div>
+  </div>
+  <div id="comboWrap"><span id="comboTxt">x2 STREAK</span></div>
+  <div id="holdHint">HOLD ANYWHERE TO OVERTAKE</div>
+  <div id="focusBadge">FOCUS — TIGHT HITBOX</div>
+  <div id="staminaWrap"><div id="staminaFill"></div></div>
+  <div id="flash"></div>
+
+  <div id="overlay">
+    <!-- MAIN MENU -->
+    <div class="screen active" id="screenMenu">
+      <h1>Overtake</h1>
+      <div id="walletBadge">💰 <span id="walletTxt">0</span></div>
+      <p>Hold to swerve into the fast lane and overtake. Grab green Focus orbs to shrink your hitbox. Chain overtakes for a coin streak.</p>
+      <div class="btnRow">
+        <button class="bigBtn" id="playBtn">Start Driving</button>
+        <button class="ghostBtn" id="garageBtn">Garage</button>
+      </div>
+    </div>
+
+    <!-- GARAGE -->
+    <div class="screen" id="screenGarage">
+      <h1>Garage</h1>
+      <div id="walletBadge2" class="hud-box" style="margin-bottom:14px;">💰 <span id="walletTxt2">0</span> coins</div>
+      <div id="skinGrid"></div>
+      <div class="btnRow">
+        <button class="ghostBtn" id="backBtn">Back</button>
+      </div>
+    </div>
+
+    <!-- DEATH / RESULTS -->
+    <div class="screen" id="screenDead">
+      <h1 id="overlayTitle">Wrecked</h1>
+      <p id="overlaySub">Head-on collision.</p>
+      <div class="stat-row">
+        <div class="stat"><div class="num" id="finalDist">0</div><div class="lbl">Meters</div></div>
+        <div class="stat"><div class="num" id="finalCoins">0</div><div class="lbl">Coins</div></div>
+        <div class="stat"><div class="num" id="finalOvertakes">0</div><div class="lbl">Overtakes</div></div>
+      </div>
+      <div class="btnRow">
+        <button class="bigBtn" id="retryBtn">Try Again</button>
+        <button class="ghostBtn" id="garageBtn2">Garage</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const wrap = document.getElementById('wrap');
+  const overlay = document.getElementById('overlay');
+  const screenMenu = document.getElementById('screenMenu');
+  const screenGarage = document.getElementById('screenGarage');
+  const screenDead = document.getElementById('screenDead');
+  const overlayTitle = document.getElementById('overlayTitle');
+  const overlaySub = document.getElementById('overlaySub');
+  const distTxt = document.getElementById('distTxt');
+  const coinTxt = document.getElementById('coinTxt');
+  const walletTxt = document.getElementById('walletTxt');
+  const walletTxt2 = document.getElementById('walletTxt2');
+  const staminaFill = document.getElementById('staminaFill');
+  const holdHint = document.getElementById('holdHint');
+  const focusBadge = document.getElementById('focusBadge');
+  const flashEl = document.getElementById('flash');
+  const finalDist = document.getElementById('finalDist');
+  const finalCoins = document.getElementById('finalCoins');
+  const finalOvertakes = document.getElementById('finalOvertakes');
+  const comboWrap = document.getElementById('comboWrap');
+  const comboTxt = document.getElementById('comboTxt');
+  const skinGrid = document.getElementById('skinGrid');
+  const playBtn = document.getElementById('playBtn');
+  const garageBtn = document.getElementById('garageBtn');
+  const garageBtn2 = document.getElementById('garageBtn2');
+  const backBtn = document.getElementById('backBtn');
+  const retryBtn = document.getElementById('retryBtn');
+
+  // ---------- Progression / wallet / skins (in-memory for this prototype session) ----------
+  // NOTE: this resets on page reload since browser storage APIs aren't used here.
+  // The real build would persist this via Unity PlayerPrefs / native save data.
+  let wallet = 0;
+
+  const SKINS = {
+    stock: {
+      name: 'Stock', cost: 0, unlocked: true,
+      swatch: 'linear-gradient(135deg,#4a4f5c,#2b2f38)',
+      sky: ['#22262f','#1c1f27','#111318'],
+      road: '#2b2f38', edgeGlow: null, edgeColor: 'rgba(255,255,255,0.35)',
+      dividerColor: 'rgba(255,210,80,0.85)', dividerGlow: null,
+      playerColor: '#ffffff', playerGlow: null,
+      stars: false, dangerTint: 'rgba(233,75,75,0.06)'
+    },
+    neon: {
+      name: 'Neon Nights', cost: 150, unlocked: false,
+      swatch: 'linear-gradient(135deg,#ff2fd0,#00e5ff)',
+      sky: ['#1a0b2e','#2a0e3d','#0a0714'],
+      road: '#150c22', edgeGlow: '#00e5ff', edgeColor: '#00e5ff',
+      dividerColor: 'rgba(255,225,77,0.9)', dividerGlow: '#ffe14d',
+      playerColor: '#ffffff', playerGlow: '#ffffff',
+      stars: true, dangerTint: 'rgba(255,47,92,0.08)'
+    },
+    sunset: {
+      name: 'Sunset Strip', cost: 400, unlocked: false,
+      swatch: 'linear-gradient(135deg,#ff7a45,#ff2f8f)',
+      sky: ['#3a1030', '#5c1a2e', '#12060c'],
+      road: '#231018', edgeGlow: '#ff7a45', edgeColor: '#ff9a5a',
+      dividerColor: 'rgba(255,255,255,0.85)', dividerGlow: '#ff2f8f',
+      playerColor: '#fff2e0', playerGlow: '#ff9a5a',
+      stars: true, dangerTint: 'rgba(255,47,143,0.1)'
+    }
+  };
+  let equippedSkin = 'stock';
+
+  function renderGarage(){
+    walletTxt.textContent = wallet;
+    walletTxt2.textContent = wallet;
+    skinGrid.innerHTML = '';
+    Object.keys(SKINS).forEach(key=>{
+      const s = SKINS[key];
+      const tile = document.createElement('div');
+      tile.className = 'skinTile' + (equippedSkin===key ? ' equipped':'') + (!s.unlocked ? ' locked':'');
+      const costLabel = s.unlocked
+        ? (equippedSkin===key ? 'Equipped' : 'Tap to equip')
+        : ('🔒 ' + s.cost);
+      const costClass = s.unlocked ? (s.cost===0?'free':'') : (wallet>=s.cost ? 'afford':'');
+      tile.innerHTML = `
+        <div class="skinSwatch" style="background:${s.swatch}"></div>
+        <div class="skinName">${s.name}</div>
+        <div class="skinCost ${costClass}">${costLabel}</div>
+      `;
+      tile.addEventListener('click', ()=> handleSkinTap(key));
+      skinGrid.appendChild(tile);
+    });
+  }
+
+  function handleSkinTap(key){
+    const s = SKINS[key];
+    if (s.unlocked){
+      equippedSkin = key;
+      renderGarage();
+      return;
+    }
+    if (wallet >= s.cost){
+      wallet -= s.cost;
+      s.unlocked = true;
+      equippedSkin = key;
+      renderGarage();
+    }
+    // if can't afford, tile just doesn't respond — silent no-op is fine for a prototype,
+    // could add a shake/toast in the real build
+  }
+
+  function showScreen(name){
+    screenMenu.classList.remove('active');
+    screenGarage.classList.remove('active');
+    screenDead.classList.remove('active');
+    if (name==='menu'){ screenMenu.classList.add('active'); walletTxt.textContent = wallet; }
+    if (name==='garage'){ screenGarage.classList.add('active'); renderGarage(); }
+    if (name==='dead'){ screenDead.classList.add('active'); }
+    overlay.classList.remove('hidden');
+  }
+
+  playBtn.addEventListener('click', startGame);
+  retryBtn.addEventListener('click', startGame);
+  garageBtn.addEventListener('click', ()=> showScreen('garage'));
+  garageBtn2.addEventListener('click', ()=> showScreen('garage'));
+  backBtn.addEventListener('click', ()=> showScreen('menu'));
+
+  // ---------- Canvas / game setup ----------
+  let W, H, DPR;
+  function resize(){
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = wrap.clientWidth;
+    H = wrap.clientHeight;
+    canvas.width = W * DPR;
+    canvas.height = H * DPR;
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    initStars();
+  }
+  window.addEventListener('resize', resize);
+
+  const ROAD_MARGIN = 0.14;
+  function laneX(lane){
+    const roadW = W * (1 - ROAD_MARGIN*2);
+    const roadLeft = W * ROAD_MARGIN;
+    return lane === 0 ? roadLeft + roadW*0.68 : roadLeft + roadW*0.28;
+  }
+
+  let state = 'menu';
+  let holding = false;
+  let laneSwitchGrace = 0;
+  let playerLane = 0;
+  let playerX, playerVisualX;
+  let stamina = 1;
+  const STAMINA_DRAIN = 0.55;
+  const STAMINA_REGEN = 0.7;
+  let speed = 220;
+  let baseSpeed = 220;
+  let distance = 0;
+  let runCoins = 0; // coins earned this run — tracked separately only for the results screen tally
+  let overtakes = 0;
+  let elapsed = 0;
+  let dashOffset = 0;
+
+  let combo = 0;
+  let comboTimer = 0;
+  const COMBO_WINDOW = 2.2;
+
+  let focusActive = 0;
+  const FOCUS_DURATION = 3.5;
+  let pickups = [];
+
+  let shakeTime = 0, shakeMag = 0;
+  let particles = [];
+
+  let stars = [];
+  function initStars(){
+    stars = [];
+    for (let i=0;i<40;i++){
+      stars.push({ x: Math.random()*W, y: Math.random()*H*0.4, r: Math.random()*1.6+0.4, tw: Math.random()*Math.PI*2 });
+    }
+  }
+
+  let traffic = [];
+  let spawnTimer = 0;
+  let spawnInterval = 0.9;
+  let idCounter = 0;
+  let pickupTimer = 0;
+
+  function resetGame(){
+    playerLane = 0;
+    playerX = laneX(0);
+    playerVisualX = playerX;
+    stamina = 1;
+    speed = baseSpeed;
+    distance = 0;
+    runCoins = 0;
+    overtakes = 0;
+    elapsed = 0;
+    traffic = [];
+    pickups = [];
+    particles = [];
+    spawnTimer = 0;
+    spawnInterval = 0.9;
+    dashOffset = 0;
+    combo = 0;
+    comboTimer = 0;
+    focusActive = 0;
+    pickupTimer = 2.5;
+    shakeTime = 0;
+  }
+
+  function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+  const NEON_COLORS = ['#00e5ff','#7dffb0','#ffe14d','#ff2fd0','#7a5cff'];
+
+  function spawnTraffic(){
+    const r = Math.random();
+    if (r < 0.55){
+      traffic.push({ id: idCounter++, lane: 0, y: -80, type: 'slow', w: 44, h: 76, passed:false, color: pick(NEON_COLORS) });
+    } else {
+      traffic.push({ id: idCounter++, lane: 1, y: -80, type: 'oncoming', w: 44, h: 76, passed:false, color: '#ff2f5c' });
+    }
+  }
+
+  function spawnPickup(){
+    const lane = Math.random() < 0.6 ? 1 : 0;
+    pickups.push({ id: idCounter++, lane, y: -60, r: 12, collected:false, pulse: Math.random()*Math.PI*2 });
+  }
+
+  function spawnParticles(x, y, color, count){
+    for (let i=0;i<count;i++){
+      const ang = Math.random()*Math.PI*2;
+      const spd = 60 + Math.random()*120;
+      particles.push({ x, y, vx: Math.cos(ang)*spd, vy: Math.sin(ang)*spd, life: 0.4+Math.random()*0.3, age: 0, color });
+    }
+  }
+
+  function startGame(){
+    resetGame();
+    state = 'playing';
+    overlay.classList.add('hidden');
+    holdHint.style.opacity = '1';
+  }
+
+  function endGame(){
+    state = 'dead';
+    finalDist.textContent = Math.floor(distance);
+    finalCoins.textContent = runCoins;
+    finalOvertakes.textContent = overtakes;
+    overlayTitle.textContent = 'Wrecked';
+    overlaySub.textContent = 'Head-on collision. Earned ' + runCoins + ' coins this run — ' + wallet + ' total in the garage.';
+    flashEl.style.transition = 'none';
+    flashEl.style.opacity = '0.7';
+    shakeTime = 0.35; shakeMag = 14;
+    requestAnimationFrame(()=>{
+      flashEl.style.transition = 'opacity 0.45s ease';
+      flashEl.style.opacity = '0';
+    });
+    showScreen('dead');
+  }
+
+  function setHold(v){
+    if (state !== 'playing') return;
+    const next = v && stamina > 0.02;
+    if (next !== holding) laneSwitchGrace = 0.14;
+    holding = next;
+  }
+  wrap.addEventListener('pointerdown', ()=> setHold(true));
+  wrap.addEventListener('pointerup', ()=> setHold(false));
+  wrap.addEventListener('pointercancel', ()=> setHold(false));
+  wrap.addEventListener('pointerleave', ()=> setHold(false));
+
+  let lastTime = performance.now();
+  function loop(now){
+    const dt = Math.min((now - lastTime)/1000, 0.05);
+    lastTime = now;
+    if (state === 'playing') update(dt);
+    render();
+    requestAnimationFrame(loop);
+  }
+
+  function update(dt){
+    elapsed += dt;
+    speed = baseSpeed + Math.min(elapsed * 4.5, 160);
+    spawnInterval = Math.max(0.9 - elapsed*0.01, 0.42);
+
+    if (holding){
+      stamina -= STAMINA_DRAIN * dt;
+      if (stamina <= 0){ stamina = 0; holding = false; laneSwitchGrace = 0.14; }
+    } else {
+      stamina += STAMINA_REGEN * dt;
+      if (stamina > 1) stamina = 1;
+    }
+    staminaFill.style.width = (stamina*100).toFixed(0) + '%';
+    staminaFill.classList.toggle('focus', focusActive > 0);
+
+    if (focusActive > 0){
+      focusActive = Math.max(0, focusActive - dt);
+      focusBadge.classList.add('show');
+      focusBadge.textContent = 'FOCUS ' + focusActive.toFixed(1) + 's';
+    } else {
+      focusBadge.classList.remove('show');
+    }
+
+    if (combo > 0){
+      comboTimer -= dt;
+      if (comboTimer <= 0){ combo = 0; comboWrap.classList.remove('show'); }
+    }
+
+    const targetLane = holding ? 1 : 0;
+    playerLane = targetLane;
+    playerX = laneX(playerLane);
+    playerVisualX += (playerX - playerVisualX) * Math.min(dt*10, 1);
+
+    holdHint.style.opacity = (elapsed > 4) ? '0' : '1';
+
+    distance += (speed*0.06) * dt;
+    dashOffset = (dashOffset + speed*dt) % 60;
+
+    spawnTimer += dt;
+    if (spawnTimer > spawnInterval){ spawnTimer = 0; spawnTraffic(); }
+
+    pickupTimer -= dt;
+    if (pickupTimer <= 0){ spawnPickup(); pickupTimer = 6 + Math.random()*4; }
+
+    const playerY = H*0.78;
+    const focusShrink = focusActive > 0 ? 0.55 : 1;
+    const playerHalfW = 9 * focusShrink;
+    const playerHalfH = 15 * focusShrink;
+    const laneAlignThreshold = 16;
+
+    laneSwitchGrace = Math.max(0, laneSwitchGrace - dt);
+
+    for (let i = traffic.length-1; i>=0; i--){
+      const t = traffic[i];
+      t.y += speed * dt;
+      const tx = laneX(t.lane);
+      const tHalfW = t.w * 0.22;
+      const tHalfH = t.h * 0.3;
+
+      const dx = Math.abs(tx - playerVisualX);
+      const dy = Math.abs(t.y - playerY);
+      const aligned = dx < laneAlignThreshold;
+      const overlapping = dx < (playerHalfW + tHalfW) && dy < (playerHalfH + tHalfH);
+      const hit = laneSwitchGrace <= 0 && aligned && overlapping;
+      if (hit){ endGame(); return; }
+
+      if (!t.nearMissChecked && aligned && dy < (playerHalfH + tHalfH + 20) && !overlapping){
+        t.nearMissChecked = true;
+        if (t.type === 'oncoming'){
+          runCoins += 2;
+          wallet += 2;
+          spawnParticles(playerVisualX, playerY, '#ffe14d', 5);
+        }
+      }
+
+      if (!t.passed && t.y > playerY + 40){
+        t.passed = true;
+        if (t.type === 'slow'){
+          overtakes++;
+          combo++;
+          comboTimer = COMBO_WINDOW;
+          const mult = 1 + Math.min(combo-1, 4)*0.5;
+          const gain = Math.round(5 * mult);
+          runCoins += gain;
+          wallet += gain;
+          if (combo >= 2){
+            comboTxt.textContent = 'x' + mult.toFixed(1) + ' STREAK';
+            comboWrap.classList.add('show');
+          }
+          spawnParticles(laneX(0), playerY, '#7dffb0', 4);
+        }
+      }
+      if (t.y > H + 100) traffic.splice(i,1);
+    }
+
+    for (let i = pickups.length-1; i>=0; i--){
+      const p = pickups[i];
+      p.y += speed * dt;
+      p.pulse += dt*6;
+      const px = laneX(p.lane);
+      const dx = Math.abs(px - playerVisualX);
+      const dy = Math.abs(p.y - playerY);
+      if (!p.collected && dx < laneAlignThreshold + 14 && dy < 30){
+        p.collected = true;
+        focusActive = FOCUS_DURATION;
+        runCoins += 3;
+        wallet += 3;
+        spawnParticles(px, p.y, '#7dffb0', 10);
+      }
+      if (p.collected || p.y > H + 60) pickups.splice(i,1);
+    }
+
+    for (let i = particles.length-1; i>=0; i--){
+      const pt = particles[i];
+      pt.age += dt;
+      if (pt.age > pt.life){ particles.splice(i,1); continue; }
+      pt.x += pt.vx*dt; pt.y += pt.vy*dt;
+      pt.vx *= 0.92; pt.vy *= 0.92;
+    }
+
+    if (shakeTime > 0) shakeTime = Math.max(0, shakeTime - dt);
+
+    distTxt.textContent = Math.floor(distance) + 'm';
+    coinTxt.textContent = wallet;
+  }
+
+  function render(){
+    const skin = SKINS[equippedSkin];
+    ctx.save();
+    if (shakeTime > 0){
+      const k = shakeTime * shakeMag;
+      ctx.translate((Math.random()-0.5)*k, (Math.random()-0.5)*k);
+    }
+
+    const bg = ctx.createLinearGradient(0,0,0,H);
+    bg.addColorStop(0, skin.sky[0]);
+    bg.addColorStop(0.45, skin.sky[1]);
+    bg.addColorStop(1, skin.sky[2]);
+    ctx.fillStyle = bg;
+    ctx.fillRect(-20,-20,W+40,H+40);
+
+    if (skin.stars){
+      ctx.fillStyle = '#fff';
+      stars.forEach(s=>{
+        const a = 0.4 + Math.sin(performance.now()/500 + s.tw)*0.3;
+        ctx.globalAlpha = Math.max(0,a);
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+    }
+
+    const roadLeft = W*ROAD_MARGIN;
+    const roadW = W*(1-ROAD_MARGIN*2);
+
+    ctx.fillStyle = skin.road;
+    ctx.fillRect(roadLeft, 0, roadW, H);
+
+    drawGlowLine(roadLeft+4, 0, roadLeft+4, H, skin.edgeColor, 3, skin.edgeGlow);
+    drawGlowLine(roadLeft+roadW-4, 0, roadLeft+roadW-4, H, skin.edgeColor, 3, skin.edgeGlow);
+
+    const dividerX = roadLeft + roadW*0.48;
+    ctx.save();
+    if (skin.dividerGlow){ ctx.shadowColor = skin.dividerGlow; ctx.shadowBlur = 10; }
+    ctx.strokeStyle = skin.dividerColor;
+    ctx.lineWidth = 4;
+    ctx.setLineDash([26,20]);
+    ctx.lineDashOffset = -dashOffset;
+    ctx.beginPath();
+    ctx.moveTo(dividerX, 0);
+    ctx.lineTo(dividerX, H);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    if (holding && state==='playing'){
+      ctx.fillStyle = skin.dangerTint;
+      ctx.fillRect(roadLeft, 0, roadW*0.48, H);
+    }
+
+    pickups.forEach(p=>{
+      const x = laneX(p.lane);
+      const pulse = 1 + Math.sin(p.pulse)*0.15;
+      ctx.save();
+      ctx.translate(x, p.y);
+      ctx.shadowColor = '#7dffb0';
+      ctx.shadowBlur = 18;
+      ctx.fillStyle = 'rgba(125,255,176,0.85)';
+      ctx.beginPath();
+      ctx.arc(0,0, p.r*pulse, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = skin.road;
+      ctx.beginPath();
+      ctx.arc(0,0, p.r*0.45, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    });
+
+    traffic.forEach(t=>{
+      drawCar(laneX(t.lane), t.y, t.w, t.h, t.color, t.lane===1, false, true);
+    });
+
+    particles.forEach(pt=>{
+      const a = 1 - pt.age/pt.life;
+      ctx.globalAlpha = Math.max(0,a);
+      ctx.fillStyle = pt.color;
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, 2.4, 0, Math.PI*2);
+      ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+
+    if (state !== 'menu'){
+      if (focusActive > 0){
+        ctx.save();
+        ctx.translate(playerVisualX, H*0.78);
+        ctx.shadowColor = '#7dffb0';
+        ctx.shadowBlur = 20;
+        ctx.strokeStyle = 'rgba(125,255,176,0.8)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0,0, 26, 0, Math.PI*2);
+        ctx.stroke();
+        ctx.restore();
+      }
+      drawCar(playerVisualX, H*0.78, 40, 68, skin.playerColor, false, true, !!skin.playerGlow, skin.playerGlow);
+    }
+
+    ctx.restore();
+  }
+
+  function drawGlowLine(x1,y1,x2,y2,color,width,glowColor){
+    ctx.save();
+    if (glowColor){ ctx.shadowColor = glowColor; ctx.shadowBlur = 12; }
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    ctx.moveTo(x1,y1);
+    ctx.lineTo(x2,y2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawCar(x, y, w, h, color, facingDown, isPlayer, useGlow, glowColorOverride){
+    ctx.save();
+    ctx.translate(x,y);
+
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.beginPath();
+    ctx.ellipse(0, h*0.42, w*0.55, 8, 0,0,Math.PI*2);
+    ctx.fill();
+
+    const r = 8;
+    ctx.save();
+    if (useGlow !== false){
+      ctx.shadowColor = glowColorOverride || color;
+      ctx.shadowBlur = isPlayer ? 16 : 10;
+    }
+    ctx.fillStyle = color;
+    roundRect(-w/2, -h/2, w, h, r);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.fillStyle = 'rgba(10,7,20,0.8)';
+    if (facingDown){
+      roundRect(-w/2+6, -h/2+8, w-12, h*0.28, 4);
+    } else {
+      roundRect(-w/2+6, h/2-h*0.34, w-12, h*0.28, 4);
+    }
+    ctx.fill();
+
+    ctx.fillStyle = isPlayer ? '#ffe14d' : (facingDown ? '#ffe14d' : '#ff2f5c');
+    const lightY = isPlayer ? -h/2+4 : (facingDown ? -h/2+4 : h/2-8);
+    ctx.fillRect(-w/2+4, lightY, 6, 4);
+    ctx.fillRect(w/2-10, lightY, 6, 4);
+
+    ctx.restore();
+  }
+
+  function roundRect(x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+  }
+
+  resize();
+  showScreen('menu');
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
