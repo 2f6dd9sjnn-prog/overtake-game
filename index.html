@@ -1109,4 +1109,27 @@
     ctx.arcTo(x+w,y+h,x,y+h,r);
     ctx.arcTo(x,y+h,x,y,r);
     ctx.arcTo(x,y,x+w,y,r);
-    ctx.close
+    ctx.closePath();
+  }
+
+  resize();
+  showScreen('menu');
+  overlay.classList.add('hidden'); // stay hidden behind splash until splash finishes
+
+  // ---------- Splash sequence ----------
+  const splash = document.getElementById('splash');
+  const splashLoadFill = document.getElementById('splashLoadFill');
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{ splashLoadFill.style.width = '100%'; });
+  });
+  setTimeout(()=>{
+    splash.classList.add('fadeOut');
+    overlay.classList.remove('hidden');
+    setTimeout(()=> splash.remove(), 550);
+  }, 2400);
+
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
