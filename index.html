@@ -23,7 +23,8 @@
     background: #0a0714;
     overflow: hidden;
   }
-  canvas { display: block; width: 100%; height: 100%; }
+  canvas { display: block; width: 100%; height: 100%; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; }
+  #wrap { -webkit-user-select: none; -webkit-touch-callout: none; }
   #hud {
     position: absolute;
     top: 0; left: 0; right: 0;
@@ -105,6 +106,13 @@
   #staminaFill.focus {
     background: linear-gradient(90deg, #7dffb0, #00e5ff);
     box-shadow: 0 0 16px rgba(120,255,180,0.9);
+  }
+  #staminaFill.low {
+    animation: staminaWarn 0.5s ease-in-out infinite;
+  }
+  @keyframes staminaWarn {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.8); }
   }
   #holdHint {
     position: absolute; bottom: 44px; left: 0; right: 0; text-align: center;
@@ -330,6 +338,7 @@
         <button class="bigBtn" id="retryBtn">Try Again</button>
         <button class="ghostBtn" id="garageBtn2">Themes</button>
       </div>
+      <button class="ghostBtn" id="shareBtn" style="margin-top:10px; font-size:12px; padding:9px 20px;">📋 Copy Score</button>
     </div>
   </div>
 </div>
@@ -370,6 +379,7 @@
   const garageBtn2 = document.getElementById('garageBtn2');
   const backBtn = document.getElementById('backBtn');
   const retryBtn = document.getElementById('retryBtn');
+  const shareBtn = document.getElementById('shareBtn');
   const muteBtn = document.getElementById('muteBtn');
   const bestBadge = document.getElementById('bestBadge');
   const bestTxt = document.getElementById('bestTxt');
@@ -513,6 +523,16 @@
 
   playBtn.addEventListener('click', startGame);
   retryBtn.addEventListener('click', startGame);
+  shareBtn.addEventListener('click', async ()=>{
+    const text = `I hit ${Math.floor(distance)}m in Neon Overtake 🏎️💨 (best: ${Math.floor(bestDistance)}m) — think you can beat it?`;
+    try {
+      await navigator.clipboard.writeText(text);
+      shareBtn.textContent = '✅ Copied!';
+    } catch(e){
+      shareBtn.textContent = '📋 Copy Score';
+    }
+    setTimeout(()=> shareBtn.textContent = '📋 Copy Score', 1600);
+  });
   garageBtn.addEventListener('click', ()=> showScreen('garage'));
   garageBtn2.addEventListener('click', ()=> showScreen('garage'));
   backBtn.addEventListener('click', ()=> showScreen('menu'));
@@ -542,6 +562,7 @@
 
   let state = 'menu';
   let holding = false;
+  let inputReadyAt = 0;
   let playerLane = 0;
   let playerX, playerVisualX;
   let stamina = 1;
@@ -567,6 +588,7 @@
   let convoyCooldown = 8;
 
   let shakeTime = 0, shakeMag = 0;
+  let adrenaline = 0; // seconds remaining of near-miss slow-motion
   let nextMilestone = 500;
   let milestoneHideTimer = null;
   let particles = [];
@@ -587,6 +609,7 @@
   let coinSpawnTimer = 0;
 
   function resetGame(){
+    holding = false;
     playerLane = 0;
     playerX = laneX(0);
     playerVisualX = playerX;
@@ -611,6 +634,7 @@
     convoyRemaining = 0;
     convoyCooldown = 8;
     shakeTime = 0;
+    adrenaline = 0;
     nextMilestone = 500;
   }
 
@@ -625,7 +649,10 @@
       return;
     }
     const r = Math.random();
-    if (r < 0.55){
+    if (r < 0.14){
+      // truck: wider/taller than a normal car, worth more to overtake, but eats more of the lane
+      traffic.push({ id: idCounter++, lane: 0, y: -80, type: 'truck', w: 54, h: 92, passed:false, color: pick(NEON_COLORS) });
+    } else if (r < 0.55){
       traffic.push({ id: idCounter++, lane: 0, y: -80, type: 'slow', w: 44, h: 76, passed:false, color: pick(NEON_COLORS) });
     } else {
       traffic.push({ id: idCounter++, lane: 1, y: -80, type: 'oncoming', w: 44, h: 76, passed:false, color: '#ff2f5c' });
@@ -653,6 +680,7 @@
   function startGame(){
     resetGame();
     state = 'playing';
+    inputReadyAt = performance.now() + 200; // ignore any residual touch state right at the transition; require a genuine fresh press
     overlay.classList.add('hidden');
     holdHint.style.opacity = '1';
   }
@@ -680,10 +708,15 @@
 
   function setHold(v){
     if (state !== 'playing') return;
+    if (performance.now() < inputReadyAt) return;
     ensureAudio();
     const next = v && stamina > 0.02;
     holding = next;
   }
+  overlay.addEventListener('pointerdown', e => e.stopPropagation());
+  canvas.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
+  canvas.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
+  canvas.addEventListener('touchend', e => e.preventDefault(), { passive: false });
   wrap.addEventListener('pointerdown', ()=> setHold(true));
   wrap.addEventListener('pointerup', ()=> setHold(false));
   wrap.addEventListener('pointercancel', ()=> setHold(false));
@@ -699,6 +732,11 @@
   }
 
   function update(dt){
+    const rawDt = dt;
+    if (adrenaline > 0){
+      adrenaline = Math.max(0, adrenaline - rawDt);
+      dt = dt * 0.35; // brief slow-motion beat on a genuine near-miss
+    }
     elapsed += dt;
     // uncapped difficulty curve — decelerating growth (sqrt) so early game stays fair,
     // but never plateaus, unlike the old hard-capped version that flatlined after ~35s
@@ -716,6 +754,7 @@
     }
     staminaFill.style.width = (stamina*100).toFixed(0) + '%';
     staminaFill.classList.toggle('focus', focusActive > 0);
+    staminaFill.classList.toggle('low', stamina < 0.2 && focusActive <= 0);
 
     if (focusActive > 0){
       focusActive = Math.max(0, focusActive - dt);
@@ -803,18 +842,21 @@
           runCoins += 1;
           wallet += 1;
           sfx.nearMiss();
+          adrenaline = 0.16;
+          haptic(20);
           spawnParticles(playerVisualX, playerY, '#ffe14d', 5);
         }
       }
 
       if (!t.passed && t.y > playerY + 40){
         t.passed = true;
-        if (t.type === 'slow'){
+        if (t.type === 'slow' || t.type === 'truck'){
           overtakes++;
           combo++;
           comboTimer = COMBO_WINDOW;
           const mult = 1 + Math.min(combo-1, 4)*0.5;
-          const gain = Math.round(5 * mult);
+          const base = t.type === 'truck' ? 9 : 5; // trucks are riskier to pass, so they pay more
+          const gain = Math.round(base * mult);
           runCoins += gain;
           wallet += gain;
           if (combo >= 2){
@@ -1067,27 +1109,4 @@
     ctx.arcTo(x+w,y+h,x,y+h,r);
     ctx.arcTo(x,y+h,x,y,r);
     ctx.arcTo(x,y,x+w,y,r);
-    ctx.closePath();
-  }
-
-  resize();
-  showScreen('menu');
-  overlay.classList.add('hidden'); // stay hidden behind splash until splash finishes
-
-  // ---------- Splash sequence ----------
-  const splash = document.getElementById('splash');
-  const splashLoadFill = document.getElementById('splashLoadFill');
-  requestAnimationFrame(()=>{
-    requestAnimationFrame(()=>{ splashLoadFill.style.width = '100%'; });
-  });
-  setTimeout(()=>{
-    splash.classList.add('fadeOut');
-    overlay.classList.remove('hidden');
-    setTimeout(()=> splash.remove(), 550);
-  }, 2400);
-
-  requestAnimationFrame(loop);
-})();
-</script>
-</body>
-</html>
+    ctx.close
