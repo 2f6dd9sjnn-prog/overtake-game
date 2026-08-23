@@ -311,8 +311,9 @@
       <div class="btnRow">
         <button class="bigBtn" id="playBtn">Start Driving</button>
         <button class="ghostBtn" id="garageBtn">Themes</button>
-        <button class="ghostBtn" id="muteBtn" style="padding:12px 18px;">🔊</button>
+        <button class="ghostBtn" id="shopBtn">Shop</button>
       </div>
+      <button class="ghostBtn" id="muteBtn" style="margin-top:10px; padding:9px 20px; font-size:12px;">🔊 Sound</button>
     </div>
 
     <!-- GARAGE -->
@@ -322,6 +323,16 @@
       <div id="skinGrid"></div>
       <div class="btnRow">
         <button class="ghostBtn" id="backBtn">Back</button>
+      </div>
+    </div>
+
+    <!-- SHOP -->
+    <div class="screen" id="screenShop">
+      <h1>Shop</h1>
+      <div id="walletBadge3" class="hud-box" style="margin-bottom:14px;">💰 <span id="walletTxt3">0</span> coins</div>
+      <div id="carGrid"></div>
+      <div class="btnRow">
+        <button class="ghostBtn" id="backBtn2">Back</button>
       </div>
     </div>
 
@@ -337,6 +348,7 @@
       <div class="btnRow">
         <button class="bigBtn" id="retryBtn">Try Again</button>
         <button class="ghostBtn" id="garageBtn2">Themes</button>
+        <button class="ghostBtn" id="shopBtn2">Shop</button>
       </div>
       <button class="ghostBtn" id="shareBtn" style="margin-top:10px; font-size:12px; padding:9px 20px;">📋 Copy Score</button>
     </div>
@@ -355,6 +367,7 @@
   const overlay = document.getElementById('overlay');
   const screenMenu = document.getElementById('screenMenu');
   const screenGarage = document.getElementById('screenGarage');
+  const screenShop = document.getElementById('screenShop');
   const screenDead = document.getElementById('screenDead');
   const overlayTitle = document.getElementById('overlayTitle');
   const overlaySub = document.getElementById('overlaySub');
@@ -362,6 +375,7 @@
   const coinTxt = document.getElementById('coinTxt');
   const walletTxt = document.getElementById('walletTxt');
   const walletTxt2 = document.getElementById('walletTxt2');
+  const walletTxt3 = document.getElementById('walletTxt3');
   const staminaFill = document.getElementById('staminaFill');
   const holdHint = document.getElementById('holdHint');
   const focusBadge = document.getElementById('focusBadge');
@@ -374,10 +388,14 @@
   const milestoneWrap = document.getElementById('milestoneWrap');
   const milestoneTxt = document.getElementById('milestoneTxt');
   const skinGrid = document.getElementById('skinGrid');
+  const carGrid = document.getElementById('carGrid');
   const playBtn = document.getElementById('playBtn');
   const garageBtn = document.getElementById('garageBtn');
   const garageBtn2 = document.getElementById('garageBtn2');
+  const shopBtn = document.getElementById('shopBtn');
+  const shopBtn2 = document.getElementById('shopBtn2');
   const backBtn = document.getElementById('backBtn');
+  const backBtn2 = document.getElementById('backBtn2');
   const retryBtn = document.getElementById('retryBtn');
   const shareBtn = document.getElementById('shareBtn');
   const muteBtn = document.getElementById('muteBtn');
@@ -444,43 +462,68 @@
       playerColor: '#ffffff', playerGlow: null,
       stars: false, dangerTint: 'rgba(233,75,75,0.06)'
     },
-    neon: {
-      name: 'Neon Nights', cost: 150, unlocked: false,
-      swatch: 'linear-gradient(135deg,#ff2fd0,#00e5ff)',
-      sky: ['#1a0b2e','#2a0e3d','#0a0714'],
-      road: '#150c22', edgeGlow: '#00e5ff', edgeColor: '#00e5ff',
-      dividerColor: 'rgba(255,225,77,0.9)', dividerGlow: '#ffe14d',
-      playerColor: '#ffffff', playerGlow: '#ffffff',
-      stars: true, dangerTint: 'rgba(255,47,92,0.08)'
+    tokyo: {
+      name: 'Tokyo Nights', cost: 250, unlocked: false,
+      swatch: 'linear-gradient(135deg,#ff2fd0 0%,#00e5ff 40%,#2a2a34 40%,#2a2a34 100%)',
+      sky: ['#120c1e', '#1c1526', '#0a0714'],
+      road: '#1a1420', edgeGlow: '#ff2fd0', edgeColor: '#ff2fd0',
+      dividerColor: 'rgba(255,196,0,0.9)', dividerGlow: '#ffc400',
+      playerColor: '#ffffff', playerGlow: '#00e5ff',
+      stars: false, dangerTint: 'rgba(255,47,208,0.08)',
+      skyline: true, skylineColor: '#241c30', skylineLit: '#ff2fd0'
     },
-    sunset: {
-      name: 'Sunset Strip', cost: 400, unlocked: false,
-      swatch: 'linear-gradient(135deg,#ff7a45,#ff2f8f)',
-      sky: ['#3a1030', '#5c1a2e', '#12060c'],
-      road: '#231018', edgeGlow: '#ff7a45', edgeColor: '#ff9a5a',
-      dividerColor: 'rgba(255,255,255,0.85)', dividerGlow: '#ff2f8f',
-      playerColor: '#fff2e0', playerGlow: '#ff9a5a',
-      stars: true, dangerTint: 'rgba(255,47,143,0.1)'
+    miami: {
+      name: 'Miami Vice', cost: 450, unlocked: false,
+      swatch: 'linear-gradient(135deg,#fa92fb 0%,#65b8bf 50%,#f4e4c9 50%,#f4e4c9 100%)',
+      sky: ['#8f8cf2', '#c97fd6', '#fa92fb'],
+      road: '#4a3f52', edgeGlow: '#65b8bf', edgeColor: '#65b8bf',
+      dividerColor: 'rgba(255,255,255,0.9)', dividerGlow: '#f96cff',
+      playerColor: '#ffffff', playerGlow: '#f96cff',
+      stars: false, dangerTint: 'rgba(249,108,255,0.08)',
+      sidewalk: true, sidewalkColor: '#e8d9c0', curbColor: '#f7ecd8',
+      grassColor: '#f4e4c9', grassColor2: '#e8d0a0', decor: 'palm'
     },
-    daylight: {
-      name: 'Daytime Streets', cost: 300, unlocked: false,
-      swatch: 'linear-gradient(135deg,#4c8f3f 0%,#4c8f3f 30%,#5a5e64 30%,#5a5e64 70%,#b9b9b9 70%)',
-      sky: ['#bfe3f7', '#a9d8ef', '#8fc9e6'],
-      road: '#54585f', edgeGlow: null, edgeColor: '#e8e6df',
-      dividerColor: 'rgba(255,255,255,0.9)', dividerGlow: null,
+    london: {
+      name: 'London Fog', cost: 400, unlocked: false,
+      swatch: 'linear-gradient(135deg,#8a8f96 0%,#8a8f96 30%,#4a4d52 30%,#4a4d52 70%,#c94a3f 70%)',
+      sky: ['#9099a3', '#7c848f', '#63696f'],
+      road: '#43464b', edgeGlow: null, edgeColor: '#d8d5cc',
+      dividerColor: 'rgba(255,255,255,0.85)', dividerGlow: null,
       playerColor: '#ffffff', playerGlow: null,
-      stars: false, dangerTint: 'rgba(200,40,40,0.08)',
-      sidewalk: true, sidewalkColor: '#b9b9b9', curbColor: '#efeee8',
-      grassColor: '#4c8f3f', grassColor2: '#3f7a34'
+      stars: false, dangerTint: 'rgba(201,74,63,0.09)',
+      sidewalk: true, sidewalkColor: '#8a8f96', curbColor: '#dcdad3',
+      grassColor: '#6e737a', grassColor2: '#5c6167', decor: 'lamp',
+      rain: true
     }
   };
   let equippedSkin = 'stock';
 
-  // pre-seeded roadside decoration so bushes/joints look organic but stay stable frame to frame
+  const CARS = {
+    white:   { name: 'Stock White',  cost: 0,   unlocked: true,  color: '#ffffff', stripe: null,      glow: null },
+    crimson: { name: 'Crimson',      cost: 200, unlocked: false, color: '#ff3b3b', stripe: '#ffffff', glow: '#ff3b3b' },
+    cobalt:  { name: 'Cobalt',       cost: 200, unlocked: false, color: '#2f6bff', stripe: '#ffe14d', glow: '#2f6bff' },
+    emerald: { name: 'Emerald',      cost: 350, unlocked: false, color: '#1fae6e', stripe: '#ffffff', glow: '#1fae6e' },
+    matte:   { name: 'Matte Black',  cost: 350, unlocked: false, color: '#1c1c1f', stripe: '#ff2fd0', glow: '#ff2fd0' },
+    gold:    { name: 'Gold Rush',    cost: 600, unlocked: false, color: '#ffcb3d', stripe: '#1c1c1f', glow: '#ffcb3d' }
+  };
+  let equippedCar = 'white';
+
+  // pre-seeded roadside decoration so bushes/palms/lamps look organic but stay stable frame to frame
   const ROADSIDE_SEEDS = Array.from({length:10}, ()=>({
     jitter: (Math.random()-0.5) * 0.6,
     size: 6 + Math.random()*7,
     dark: Math.random() < 0.5
+  }));
+  // pre-seeded skyline silhouette (Tokyo) — stable building heights/positions
+  const SKYLINE_SEEDS = Array.from({length:8}, ()=>({
+    jitter: Math.random(),
+    h: 40 + Math.random()*90,
+    w: 18 + Math.random()*20,
+    lit: Math.random() < 0.4
+  }));
+  // pre-seeded rain streaks (London)
+  const RAIN_SEEDS = Array.from({length:24}, ()=>({
+    x: Math.random(), yOff: Math.random()*400, len: 12+Math.random()*10, speed: 0.7+Math.random()*0.6
   }));
   let roadsideScroll = 0;
 
@@ -523,9 +566,47 @@
     // could add a shake/toast in the real build
   }
 
+  function renderShop(){
+    walletTxt3.textContent = wallet;
+    carGrid.innerHTML = '';
+    Object.keys(CARS).forEach(key=>{
+      const c = CARS[key];
+      const tile = document.createElement('div');
+      tile.className = 'skinTile' + (equippedCar===key ? ' equipped':'') + (!c.unlocked ? ' locked':'');
+      const costLabel = c.unlocked
+        ? (equippedCar===key ? 'Equipped' : 'Tap to equip')
+        : ('🔒 ' + c.cost);
+      const costClass = c.unlocked ? (c.cost===0?'free':'') : (wallet>=c.cost ? 'afford':'');
+      const stripeHtml = c.stripe ? `linear-gradient(90deg, transparent 44%, ${c.stripe} 44%, ${c.stripe} 56%, transparent 56%), ` : '';
+      tile.innerHTML = `
+        <div class="skinSwatch" style="background:${stripeHtml}${c.color}"></div>
+        <div class="skinName">${c.name}</div>
+        <div class="skinCost ${costClass}">${costLabel}</div>
+      `;
+      tile.addEventListener('click', ()=> handleCarTap(key));
+      carGrid.appendChild(tile);
+    });
+  }
+
+  function handleCarTap(key){
+    const c = CARS[key];
+    if (c.unlocked){
+      equippedCar = key;
+      renderShop();
+      return;
+    }
+    if (wallet >= c.cost){
+      wallet -= c.cost;
+      c.unlocked = true;
+      equippedCar = key;
+      renderShop();
+    }
+  }
+
   function showScreen(name){
     screenMenu.classList.remove('active');
     screenGarage.classList.remove('active');
+    screenShop.classList.remove('active');
     screenDead.classList.remove('active');
     if (name==='menu'){
       screenMenu.classList.add('active');
@@ -536,6 +617,7 @@
       }
     }
     if (name==='garage'){ screenGarage.classList.add('active'); renderGarage(); }
+    if (name==='shop'){ screenShop.classList.add('active'); renderShop(); }
     if (name==='dead'){ screenDead.classList.add('active'); }
     overlay.classList.remove('hidden');
   }
@@ -554,7 +636,10 @@
   });
   garageBtn.addEventListener('click', ()=> showScreen('garage'));
   garageBtn2.addEventListener('click', ()=> showScreen('garage'));
+  shopBtn.addEventListener('click', ()=> showScreen('shop'));
+  shopBtn2.addEventListener('click', ()=> showScreen('shop'));
   backBtn.addEventListener('click', ()=> showScreen('menu'));
+  backBtn2.addEventListener('click', ()=> showScreen('menu'));
 
   // ---------- Canvas / game setup ----------
   let W, H, DPR;
@@ -1004,6 +1089,8 @@
       ctx.globalAlpha = 1;
     }
 
+    if (skin.skyline) drawSkyline(skin);
+
     const roadLeft = W*ROAD_MARGIN;
     const roadW = W*(1-ROAD_MARGIN*2);
 
@@ -1015,18 +1102,6 @@
     ctx.fillRect(roadLeft, 0, roadW, H);
 
     if (skin.sidewalk){
-      // subtle asphalt mottling for texture instead of a flat fill
-      ctx.save();
-      ctx.globalAlpha = 0.06;
-      ctx.fillStyle = '#000000';
-      for (let i=0;i<6;i++){
-        const mx = roadLeft + (i*roadW/6) + (roadW/12);
-        const my = ((i*137 + roadsideScroll*0.5) % (H+80)) - 40;
-        ctx.beginPath();
-        ctx.ellipse(mx, my, 30, 14, 0.4, 0, Math.PI*2);
-        ctx.fill();
-      }
-      ctx.restore();
       // solid curb line between road and pavement, more realistic than a glow line
       ctx.fillStyle = skin.curbColor;
       ctx.fillRect(roadLeft-3, 0, 3, H);
@@ -1092,6 +1167,8 @@
       drawCar(laneX(t.lane), t.y, t.w, t.h, t.color, t.lane===1, false, false);
     });
 
+    if (skin.rain) drawRain(skin);
+
     particles.forEach(pt=>{
       const a = 1 - pt.age/pt.life;
       ctx.globalAlpha = Math.max(0,a);
@@ -1126,7 +1203,10 @@
         ctx.stroke();
         ctx.restore();
       }
-      drawCar(playerVisualX, H*0.78, 40, 68, skin.playerColor, false, true, !!skin.playerGlow, skin.playerGlow);
+      const car = CARS[equippedCar];
+      const pColor = car.color;
+      const pGlow = car.glow || skin.playerGlow;
+      drawCar(playerVisualX, H*0.78, 40, 68, pColor, false, true, !!pGlow, pGlow, car.stripe);
     }
 
     ctx.restore();
@@ -1138,28 +1218,59 @@
       { grassX: 0, grassW: roadLeft - pavementW, pavementX: roadLeft - pavementW },
       { grassX: roadLeft + roadW + pavementW, grassW: W - (roadLeft + roadW + pavementW), pavementX: roadLeft + roadW }
     ];
+    const decor = skin.decor || 'bush';
 
     sides.forEach(side=>{
-      // grass base
       ctx.fillStyle = skin.grassColor;
       ctx.fillRect(side.grassX, 0, side.grassW, H);
 
-      // scrolling bush/tuft speckles across the grass band
       ROADSIDE_SEEDS.forEach((seed, i)=>{
-        const spacing = 70;
+        const spacing = decor === 'lamp' ? 130 : 70;
         const y = ((i*spacing + roadsideScroll) % (H+spacing)) - spacing;
         const x = side.grassX + side.grassW*0.5 + seed.jitter*side.grassW*0.7;
-        ctx.fillStyle = seed.dark ? skin.grassColor2 : 'rgba(255,255,255,0.12)';
-        ctx.beginPath();
-        ctx.arc(x, y, seed.size, 0, Math.PI*2);
-        ctx.fill();
+
+        if (decor === 'palm'){
+          // simple palm silhouette: trunk + fan of fronds
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.strokeStyle = '#6b4a2f';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(0, 16); ctx.quadraticCurveTo(3, 0, 1, -14);
+          ctx.stroke();
+          ctx.fillStyle = skin.grassColor2;
+          for (let f=0; f<5; f++){
+            const ang = (-Math.PI/2) + (f-2)*0.45;
+            ctx.beginPath();
+            ctx.ellipse(1 + Math.cos(ang)*10, -14 + Math.sin(ang)*10, 9, 3, ang, 0, Math.PI*2);
+            ctx.fill();
+          }
+          ctx.restore();
+        } else if (decor === 'lamp'){
+          // simple lamp post silhouette
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.fillStyle = '#2a2c30';
+          ctx.fillRect(-1.5, -22, 3, 24);
+          ctx.fillStyle = 'rgba(255,220,140,0.9)';
+          ctx.shadowColor = '#ffdc8c';
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.arc(0, -24, 4, 0, Math.PI*2);
+          ctx.fill();
+          ctx.restore();
+        } else {
+          // bush tuft
+          ctx.fillStyle = seed.dark ? skin.grassColor2 : 'rgba(255,255,255,0.12)';
+          ctx.beginPath();
+          ctx.arc(x, y, seed.size, 0, Math.PI*2);
+          ctx.fill();
+        }
       });
 
-      // pavement strip between grass and road
       ctx.fillStyle = skin.sidewalkColor;
       ctx.fillRect(side.pavementX, 0, pavementW, H);
 
-      // scrolling expansion-joint lines for a real paved look
       ctx.strokeStyle = 'rgba(0,0,0,0.15)';
       ctx.lineWidth = 2;
       const jointSpacing = 46;
@@ -1171,6 +1282,41 @@
         ctx.stroke();
       }
     });
+  }
+
+  function drawSkyline(skin){
+    // simple scrolling building silhouette band along the top of the screen, Tokyo-style
+    const bandH = 90;
+    ctx.save();
+    ctx.globalAlpha = 0.9;
+    SKYLINE_SEEDS.forEach((b, i)=>{
+      const spacing = W / SKYLINE_SEEDS.length;
+      const x = ((i*spacing + b.jitter*20 - (roadsideScroll*0.15)) % (W+80)) - 40;
+      ctx.fillStyle = skin.skylineColor;
+      ctx.fillRect(x, bandH - b.h, b.w, b.h);
+      if (b.lit){
+        ctx.fillStyle = skin.skylineLit;
+        ctx.globalAlpha = 0.5 + Math.sin(performance.now()/400 + i)*0.2;
+        ctx.fillRect(x+4, bandH - b.h + 6, b.w-8, 5);
+      }
+      ctx.globalAlpha = 0.9;
+    });
+    ctx.restore();
+  }
+
+  function drawRain(skin){
+    ctx.save();
+    ctx.strokeStyle = 'rgba(220,230,240,0.35)';
+    ctx.lineWidth = 1.4;
+    RAIN_SEEDS.forEach(r=>{
+      const x = r.x * W;
+      const y = ((r.yOff + roadsideScroll*r.speed) % (H+40)) - 20;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x-4, y+r.len);
+      ctx.stroke();
+    });
+    ctx.restore();
   }
 
   function drawGlowLine(x1,y1,x2,y2,color,width,glowColor){
@@ -1185,7 +1331,7 @@
     ctx.restore();
   }
 
-  function drawCar(x, y, w, h, color, facingDown, isPlayer, useGlow, glowColorOverride){
+  function drawCar(x, y, w, h, color, facingDown, isPlayer, useGlow, glowColorOverride, stripeColor){
     ctx.save();
     ctx.translate(x,y);
 
@@ -1204,6 +1350,11 @@
     roundRect(-w/2, -h/2, w, h, r);
     ctx.fill();
     ctx.restore();
+
+    if (stripeColor){
+      ctx.fillStyle = stripeColor;
+      ctx.fillRect(-w*0.09, -h/2+3, w*0.18, h-6);
+    }
 
     ctx.fillStyle = 'rgba(10,7,20,0.8)';
     if (facingDown){
