@@ -119,6 +119,37 @@
     color: rgba(255,255,255,0.55); font-size: 12px; letter-spacing: 0.8px;
     text-transform: uppercase; z-index: 4; pointer-events: none;
   }
+  #firstRunCue {
+    position: absolute; left: 50%; top: 62%;
+    width: 70px; height: 70px; margin: -35px 0 0 -35px;
+    z-index: 4; pointer-events: none; opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  #firstRunCue.show { opacity: 1; }
+  #firstRunCue .cueRing {
+    position: absolute; inset: 0; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.55);
+    animation: cueHold 1.4s ease-in-out infinite;
+  }
+  #firstRunCue .cueDot {
+    position: absolute; left: 50%; top: 50%; width: 14px; height: 14px;
+    margin: -7px 0 0 -7px; border-radius: 50%;
+    background: rgba(255,255,255,0.85);
+    box-shadow: 0 0 14px rgba(255,255,255,0.6);
+    animation: cueDot 1.4s ease-in-out infinite;
+  }
+  @keyframes cueHold {
+    0% { transform: scale(0.55); opacity: 0.9; border-color: rgba(125,255,176,0.9); }
+    55% { transform: scale(1); opacity: 0.4; border-color: rgba(125,255,176,0.9); }
+    56% { transform: scale(1); opacity: 0.9; border-color: rgba(255,60,220,0.9); }
+    100% { transform: scale(0.55); opacity: 0.9; border-color: rgba(255,60,220,0.9); }
+  }
+  @keyframes cueDot {
+    0% { transform: scale(1); }
+    55% { transform: scale(1.3); }
+    56% { transform: scale(0.7); }
+    100% { transform: scale(1); }
+  }
   #focusBadge {
     position: absolute; bottom: 44px; left: 0; right: 0; text-align: center;
     color: #7dffb0; font-size: 12px; font-weight: 800; letter-spacing: 1.2px;
@@ -326,6 +357,10 @@
   <div id="comboWrap"><span id="comboTxt">x2 STREAK</span></div>
   <div id="milestoneWrap"><span id="milestoneTxt">500m</span></div>
   <div id="holdHint">HOLD ANYWHERE TO OVERTAKE</div>
+  <div id="firstRunCue">
+    <div class="cueRing"></div>
+    <div class="cueDot"></div>
+  </div>
   <div id="focusBadge">FOCUS — STAMINA SAVER</div>
   <div id="shieldBadge" style="position:absolute; bottom:64px; left:0; right:0; text-align:center; color:#2f9bff; font-size:12px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; text-shadow:0 0 10px rgba(47,155,255,0.9); z-index:4; pointer-events:none; opacity:0; transition:opacity 0.15s ease;">🛡️ SHIELD READY</div>
   <div id="achieveToast"><span id="achieveToastIcon">🏅</span><span id="achieveToastText">Achievement Unlocked</span></div>
@@ -361,11 +396,11 @@
       <h1>Shop</h1>
       <div id="walletBadge3" class="hud-box" style="margin-bottom:14px;">💰 <span id="walletTxt3">0</span> coins</div>
       <div id="shopTabs" style="display:flex; gap:6px; background:rgba(255,255,255,0.06); border-radius:10px; padding:4px; margin-bottom:14px;">
-        <button class="shopTab active" id="tabCarsBtn" data-tab="cars">Cars</button>
-        <button class="shopTab" id="tabThemesBtn" data-tab="themes">Themes</button>
+        <button class="shopTab" id="tabCarsBtn" data-tab="cars">Cars</button>
+        <button class="shopTab active" id="tabThemesBtn" data-tab="themes">Themes</button>
       </div>
-      <div id="carGrid"></div>
-      <div id="skinGrid" style="display:none;"></div>
+      <div id="skinGrid"></div>
+      <div id="carGrid" style="display:none;"></div>
       <div class="btnRow">
         <button class="ghostBtn" id="backBtn2">Back</button>
       </div>
@@ -374,6 +409,11 @@
     <!-- ACHIEVEMENTS -->
     <div class="screen" id="screenAchieve">
       <h1>Achievements</h1>
+      <div id="careerStats" style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; width:100%; max-width:320px; margin-bottom:14px;">
+        <div class="hud-box" style="text-align:center;"><div style="font-size:15px; font-weight:800;" id="statDist">0m</div><div style="font-size:9px; opacity:0.6; text-transform:uppercase;">Total Distance</div></div>
+        <div class="hud-box" style="text-align:center;"><div style="font-size:15px; font-weight:800;" id="statOvertakes">0</div><div style="font-size:9px; opacity:0.6; text-transform:uppercase;">Overtakes</div></div>
+        <div class="hud-box" style="text-align:center;"><div style="font-size:15px; font-weight:800;" id="statRuns">0</div><div style="font-size:9px; opacity:0.6; text-transform:uppercase;">Runs Played</div></div>
+      </div>
       <div id="achieveProgress" class="hud-box" style="margin-bottom:14px;">0 / 0 unlocked</div>
       <div id="achieveGrid"></div>
       <div class="btnRow">
@@ -387,6 +427,7 @@
       <div id="rankBadge" style="font-size:44px; font-weight:900; margin:-4px 0 2px; text-shadow:0 0 20px currentColor;">C</div>
       <p id="overlaySub">Head-on collision.</p>
       <div id="challengeResult" style="display:none; font-size:12px; color:#7dffb0; margin:-6px 0 8px; font-weight:700;"></div>
+      <div id="achieveResult" style="display:none; font-size:12px; color:#ffcb3d; margin:-4px 0 8px; font-weight:700;"></div>
       <div class="stat-row">
         <div class="stat"><div class="num" id="finalDist">0</div><div class="lbl">Meters</div></div>
         <div class="stat"><div class="num" id="finalCoins">0</div><div class="lbl">Coins</div></div>
@@ -423,6 +464,7 @@
   const walletTxt3 = document.getElementById('walletTxt3');
   const staminaFill = document.getElementById('staminaFill');
   const holdHint = document.getElementById('holdHint');
+  const firstRunCue = document.getElementById('firstRunCue');
   const focusBadge = document.getElementById('focusBadge');
   const shieldBadge = document.getElementById('shieldBadge');
   const achieveToast = document.getElementById('achieveToast');
@@ -434,6 +476,7 @@
   const finalOvertakes = document.getElementById('finalOvertakes');
   const rankBadge = document.getElementById('rankBadge');
   const challengeResult = document.getElementById('challengeResult');
+  const achieveResult = document.getElementById('achieveResult');
   const challengeText = document.getElementById('challengeText');
   const challengeReward = document.getElementById('challengeReward');
   const comboWrap = document.getElementById('comboWrap');
@@ -444,6 +487,9 @@
   const carGrid = document.getElementById('carGrid');
   const achieveGrid = document.getElementById('achieveGrid');
   const achieveProgress = document.getElementById('achieveProgress');
+  const statDist = document.getElementById('statDist');
+  const statOvertakes = document.getElementById('statOvertakes');
+  const statRuns = document.getElementById('statRuns');
   const playBtn = document.getElementById('playBtn');
   const shopBtn = document.getElementById('shopBtn');
   const shopBtn2 = document.getElementById('shopBtn2');
@@ -503,6 +549,7 @@
 
   // ---------- High score (in-memory for this session) ----------
   let bestDistance = 0;
+  let hasPlayedBefore = false;
 
   // ---------- Progression / wallet / skins (in-memory for this prototype session) ----------
   // NOTE: this resets on page reload since browser storage APIs aren't used here.
@@ -672,8 +719,7 @@
       if (!a.unlocked && a.check()){
         a.unlocked = true;
         wallet += a.reward;
-        achieveToastQueue.push(a);
-        if (!achieveToastShowing) showNextToast();
+        runAchievementsUnlocked.push(a);
       }
     });
   }
@@ -692,6 +738,9 @@
   }
 
   function renderAchievements(){
+    statDist.textContent = Math.floor(stats.totalDistance) + 'm';
+    statOvertakes.textContent = stats.totalOvertakes;
+    statRuns.textContent = stats.runsPlayed;
     const unlockedCount = ACHIEVEMENTS.filter(a=>a.unlocked).length;
     achieveProgress.textContent = `${unlockedCount} / ${ACHIEVEMENTS.length} unlocked`;
     achieveGrid.innerHTML = '';
@@ -757,7 +806,7 @@
         bestTxt.textContent = Math.floor(bestDistance);
       }
     }
-    if (name==='shop'){ screenShop.classList.add('active'); renderShop(); renderGarage(); }
+    if (name==='shop'){ screenShop.classList.add('active'); renderShop(); renderGarage(); setShopTab('themes'); }
     if (name==='achieve'){ screenAchieve.classList.add('active'); renderAchievements(); }
     if (name==='dead'){ screenDead.classList.add('active'); }
     overlay.classList.remove('hidden');
@@ -847,11 +896,13 @@
   let shakeTime = 0, shakeMag = 0;
   let adrenaline = 0; // seconds remaining of near-miss slow-motion
   let nextMilestone = 500;
+  let fireTrailTimer = 0; // spawns flame particles behind the car while on a high combo streak
 
   // ---------- Session stats (cumulative across runs, achievements, and challenge) ----------
-  let stats = { totalOvertakes: 0, totalNearMisses: 0, totalTrucks: 0, totalFocusOrbs: 0, totalShields: 0, runsPlayed: 0, bestCombo: 0 };
+  let stats = { totalOvertakes: 0, totalNearMisses: 0, totalTrucks: 0, totalFocusOrbs: 0, totalShields: 0, runsPlayed: 0, bestCombo: 0, totalDistance: 0, totalCoinsEarned: 0 };
   // per-run counters, reset each resetGame()
   let runNearMisses = 0, runTrucks = 0, runCoinPickups = 0, runBestCombo = 0;
+  let runAchievementsUnlocked = [];
 
   const ACHIEVEMENTS = [
     { id:'first',    icon:'🚗', name:'First Drive',    desc:'Complete your first run',              reward:10, check:()=> stats.runsPlayed >= 1 },
@@ -862,7 +913,9 @@
     { id:'streak',   icon:'🔥', name:'Streak Master',   desc:'Hit a 5-chain combo in one run',       reward:20, check:()=> runBestCombo >= 5 },
     { id:'shielded', icon:'🛡️', name:'Shielded',        desc:'Survive a hit using a Shield orb',     reward:15, check:()=> stats.totalShields >= 1 },
     { id:'collector',icon:'🎨', name:'Collector',       desc:'Unlock every theme',                   reward:40, check:()=> Object.values(SKINS).every(s=>s.unlocked) },
-    { id:'showroom', icon:'🏆', name:'Showroom',        desc:'Unlock every car',                     reward:40, check:()=> Object.values(CARS).every(c=>c.unlocked) }
+    { id:'showroom', icon:'🏆', name:'Showroom',        desc:'Unlock every car',                     reward:40, check:()=> Object.values(CARS).every(c=>c.unlocked) },
+    { id:'marathon', icon:'🏔️', name:'Marathon',        desc:'Drive 10,000m total, across all runs', reward:35, check:()=> stats.totalDistance >= 10000 },
+    { id:'highroller',icon:'💰', name:'High Roller',     desc:'Earn 1,000 coins total, across all runs', reward:35, check:()=> stats.totalCoinsEarned >= 1000 }
   ];
 
   const CHALLENGE_POOL = [
@@ -922,10 +975,12 @@
     shakeTime = 0;
     adrenaline = 0;
     nextMilestone = 500;
+    fireTrailTimer = 0;
     runNearMisses = 0;
     runTrucks = 0;
     runCoinPickups = 0;
     runBestCombo = 0;
+    runAchievementsUnlocked = [];
     challengeResult.style.display = 'none';
   }
 
@@ -995,14 +1050,22 @@
     inputReadyAt = performance.now() + 200; // ignore any residual touch state right at the transition; require a genuine fresh press
     overlay.classList.add('hidden');
     holdHint.style.opacity = '1';
+    if (!hasPlayedBefore){
+      firstRunCue.classList.add('show');
+    }
   }
 
   function endGame(){
     state = 'dead';
+    hasPlayedBefore = true;
+    firstRunCue.classList.remove('show');
     const isNewBest = distance > bestDistance;
     if (isNewBest) bestDistance = distance;
     stats.runsPlayed++;
     stats.bestCombo = Math.max(stats.bestCombo, runBestCombo);
+    stats.totalDistance += distance;
+    stats.totalOvertakes += overtakes;
+    stats.totalCoinsEarned += runCoins;
     finalDist.textContent = Math.floor(distance);
     finalCoins.textContent = runCoins;
     finalOvertakes.textContent = overtakes;
@@ -1015,6 +1078,13 @@
     rankBadge.style.color = rank.color;
     evaluateChallenge();
     checkAchievements();
+    if (runAchievementsUnlocked.length > 0){
+      const lines = runAchievementsUnlocked.map(a => `${a.icon} ${a.name} +${a.reward}`).join(' · ');
+      achieveResult.textContent = '🏅 ' + lines;
+      achieveResult.style.display = 'block';
+    } else {
+      achieveResult.style.display = 'none';
+    }
     flashEl.style.transition = 'none';
     flashEl.style.opacity = '0.7';
     shakeTime = 0.35; shakeMag = 14;
@@ -1031,6 +1101,10 @@
     ensureAudio();
     const next = v && stamina > 0.02;
     holding = next;
+    if (next && !hasPlayedBefore){
+      hasPlayedBefore = true;
+      firstRunCue.classList.remove('show');
+    }
   }
   overlay.addEventListener('pointerdown', e => e.stopPropagation());
   canvas.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
@@ -1088,6 +1162,21 @@
     if (combo > 0){
       comboTimer -= dt;
       if (comboTimer <= 0){ combo = 0; comboWrap.classList.remove('show'); }
+    }
+
+    if (combo >= 5){
+      fireTrailTimer -= dt;
+      if (fireTrailTimer <= 0){
+        fireTrailTimer = 0.045;
+        const fx = playerVisualX + (Math.random()-0.5)*14;
+        const fy = H*0.78 + 26 + Math.random()*6;
+        particles.push({
+          x: fx, y: fy,
+          vx: (Math.random()-0.5)*20, vy: 40 + Math.random()*40,
+          life: 0.3 + Math.random()*0.2, age: 0,
+          color: Math.random() < 0.5 ? '#ff7a2f' : '#ffcb3d'
+        });
+      }
     }
 
     const targetLane = holding ? 1 : 0;
@@ -1435,6 +1524,17 @@
     });
 
     if (skin.rain) drawRain(skin);
+
+    if (combo >= 5){
+      const pulse = 0.12 + Math.sin(performance.now()/180)*0.05;
+      ctx.save();
+      const vg = ctx.createRadialGradient(W/2, H*0.6, H*0.25, W/2, H*0.6, H*0.75);
+      vg.addColorStop(0, 'rgba(255,122,47,0)');
+      vg.addColorStop(1, `rgba(255,122,47,${pulse})`);
+      ctx.fillStyle = vg;
+      ctx.fillRect(0,0,W,H);
+      ctx.restore();
+    }
 
     particles.forEach(pt=>{
       const a = 1 - pt.age/pt.life;
