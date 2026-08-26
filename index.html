@@ -128,27 +128,29 @@
   #firstRunCue.show { opacity: 1; }
   #firstRunCue .cueRing {
     position: absolute; inset: 0; border-radius: 50%;
-    border: 2px solid rgba(255,255,255,0.55);
-    animation: cueHold 1.4s ease-in-out infinite;
+    border: 2px solid rgba(255,255,255,0.5);
+    animation: cueHold 1.6s ease-in-out infinite;
   }
-  #firstRunCue .cueDot {
-    position: absolute; left: 50%; top: 50%; width: 14px; height: 14px;
-    margin: -7px 0 0 -7px; border-radius: 50%;
-    background: rgba(255,255,255,0.85);
-    box-shadow: 0 0 14px rgba(255,255,255,0.6);
-    animation: cueDot 1.4s ease-in-out infinite;
+  #firstRunCue .cueFinger {
+    position: absolute; left: 50%; top: 50%;
+    width: 40px; height: 40px; margin: -32px 0 0 -14px;
+    font-size: 34px; line-height: 1;
+    filter: drop-shadow(0 3px 6px rgba(0,0,0,0.5));
+    animation: fingerTap 1.6s ease-in-out infinite;
   }
   @keyframes cueHold {
-    0% { transform: scale(0.55); opacity: 0.9; border-color: rgba(125,255,176,0.9); }
-    55% { transform: scale(1); opacity: 0.4; border-color: rgba(125,255,176,0.9); }
-    56% { transform: scale(1); opacity: 0.9; border-color: rgba(255,60,220,0.9); }
-    100% { transform: scale(0.55); opacity: 0.9; border-color: rgba(255,60,220,0.9); }
+    0% { transform: scale(1); opacity: 0.5; border-color: rgba(255,255,255,0.5); }
+    8% { transform: scale(0.68); opacity: 0.95; border-color: rgba(125,255,176,0.95); }
+    55% { transform: scale(0.68); opacity: 0.95; border-color: rgba(125,255,176,0.95); }
+    64% { transform: scale(1.2); opacity: 0.25; border-color: rgba(255,60,220,0.9); }
+    100% { transform: scale(1); opacity: 0.5; border-color: rgba(255,255,255,0.5); }
   }
-  @keyframes cueDot {
-    0% { transform: scale(1); }
-    55% { transform: scale(1.3); }
-    56% { transform: scale(0.7); }
-    100% { transform: scale(1); }
+  @keyframes fingerTap {
+    0% { transform: translateY(-20px) scale(1); }
+    8% { transform: translateY(0px) scale(0.92); }
+    55% { transform: translateY(0px) scale(0.92); }
+    64% { transform: translateY(-10px) scale(1.05); }
+    100% { transform: translateY(-20px) scale(1); }
   }
   #focusBadge {
     position: absolute; bottom: 44px; left: 0; right: 0; text-align: center;
@@ -359,7 +361,7 @@
   <div id="holdHint">HOLD ANYWHERE TO OVERTAKE</div>
   <div id="firstRunCue">
     <div class="cueRing"></div>
-    <div class="cueDot"></div>
+    <div class="cueFinger">👆</div>
   </div>
   <div id="focusBadge">FOCUS — STAMINA SAVER</div>
   <div id="shieldBadge" style="position:absolute; bottom:64px; left:0; right:0; text-align:center; color:#2f9bff; font-size:12px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; text-shadow:0 0 10px rgba(47,155,255,0.9); z-index:4; pointer-events:none; opacity:0; transition:opacity 0.15s ease;">🛡️ SHIELD READY</div>
@@ -574,7 +576,7 @@
       dividerColor: 'rgba(255,196,0,0.9)', dividerGlow: '#ffc400',
       playerColor: '#ffffff', playerGlow: '#00e5ff',
       stars: false, dangerTint: 'rgba(255,47,208,0.08)',
-      skyline: true, skylineColor: '#241c30', skylineLit: '#ff2fd0'
+      skyline: true, skylineColor: '#241c30', skylineLit: '#ff2fd0', skylineLit2: '#00e5ff'
     },
     miami: {
       name: 'Miami Vice', cost: 0, unlocked: false,
@@ -585,7 +587,7 @@
       playerColor: '#ffffff', playerGlow: '#f96cff',
       stars: false, dangerTint: 'rgba(249,108,255,0.08)',
       sidewalk: true, sidewalkColor: '#e8d9c0', curbColor: '#f7ecd8',
-      grassColor: '#f4e4c9', grassColor2: '#e8d0a0', decor: 'palm'
+      grassColor: '#f4e4c9', grassColor2: '#e8d0a0', decor: 'palm', sunGlow: true
     },
     london: {
       name: 'London Fog', cost: 0, unlocked: false,
@@ -597,7 +599,7 @@
       stars: false, dangerTint: 'rgba(201,74,63,0.09)',
       sidewalk: true, sidewalkColor: '#8a8f96', curbColor: '#dcdad3',
       grassColor: '#6e737a', grassColor2: '#5c6167', decor: 'lamp',
-      rain: true
+      rain: true, wetRoad: true
     }
   };
   let equippedSkin = 'stock';
@@ -683,8 +685,9 @@
         : ('🔒 ' + c.cost);
       const costClass = c.unlocked ? (c.cost===0?'free':'') : (wallet>=c.cost ? 'afford':'');
       const stripeHtml = c.stripe ? `linear-gradient(90deg, transparent 44%, ${c.stripe} 44%, ${c.stripe} 56%, transparent 56%), ` : '';
+      const depthGrad = `linear-gradient(135deg, ${lightenColor(c.color,0.3)}, ${c.color} 45%, ${darkenColor(c.color,0.24)})`;
       tile.innerHTML = `
-        <div class="skinSwatch" style="background:${stripeHtml}${c.color}"></div>
+        <div class="skinSwatch" style="background:${stripeHtml}${depthGrad}"></div>
         <div class="skinTextWrap">
           <div class="skinName">${c.name}</div>
           <div class="skinCost ${costClass}">${costLabel}</div>
@@ -1422,6 +1425,7 @@
     }
 
     if (skin.skyline) drawSkyline(skin);
+    if (skin.sunGlow) drawSunGlow(skin);
 
     const roadLeft = W*ROAD_MARGIN;
     const roadW = W*(1-ROAD_MARGIN*2);
@@ -1432,6 +1436,8 @@
 
     ctx.fillStyle = skin.road;
     ctx.fillRect(roadLeft, 0, roadW, H);
+
+    if (skin.wetRoad) drawWetSheen(skin, roadLeft, roadW);
 
     if (skin.sidewalk){
       // solid curb line between road and pavement, more realistic than a glow line
@@ -1662,12 +1668,43 @@
       ctx.fillStyle = skin.skylineColor;
       ctx.fillRect(x, bandH - b.h, b.w, b.h);
       if (b.lit){
-        ctx.fillStyle = skin.skylineLit;
+        const litColor = i % 2 === 0 ? skin.skylineLit : (skin.skylineLit2 || skin.skylineLit);
+        ctx.fillStyle = litColor;
         ctx.globalAlpha = 0.5 + Math.sin(performance.now()/400 + i)*0.2;
         ctx.fillRect(x+4, bandH - b.h + 6, b.w-8, 5);
+        if (b.h > 85){
+          ctx.globalAlpha = 0.4 + Math.sin(performance.now()/380 + i + 1.5)*0.2;
+          ctx.fillRect(x+4, bandH - b.h + 20, b.w-8, 4);
+        }
       }
       ctx.globalAlpha = 0.9;
     });
+    ctx.restore();
+  }
+
+  function drawSunGlow(skin){
+    // soft horizon glow for Miami's sunset atmosphere
+    ctx.save();
+    const g = ctx.createRadialGradient(W/2, 20, 0, W/2, 20, W*0.6);
+    g.addColorStop(0, 'rgba(255,214,140,0.35)');
+    g.addColorStop(0.5, 'rgba(249,108,255,0.12)');
+    g.addColorStop(1, 'rgba(249,108,255,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,W,100);
+    ctx.restore();
+  }
+
+  function drawWetSheen(skin, roadLeft, roadW){
+    // soft scrolling diagonal highlight across the road, suggesting wet/reflective asphalt
+    ctx.save();
+    ctx.globalAlpha = 0.06;
+    const sheenX = roadLeft + ((roadsideScroll*0.6) % (roadW+160)) - 80;
+    const g = ctx.createLinearGradient(sheenX-40, 0, sheenX+40, H);
+    g.addColorStop(0, 'rgba(255,255,255,0)');
+    g.addColorStop(0.5, 'rgba(255,255,255,0.8)');
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(roadLeft, 0, roadW, H);
     ctx.restore();
   }
 
@@ -1698,6 +1735,21 @@
     ctx.restore();
   }
 
+  function hexToRgb(hex){
+    hex = hex.replace('#','');
+    if (hex.length===3) hex = hex.split('').map(c=>c+c).join('');
+    const num = parseInt(hex,16);
+    return { r:(num>>16)&255, g:(num>>8)&255, b:num&255 };
+  }
+  function lightenColor(hex, amt){
+    const {r,g,b} = hexToRgb(hex);
+    return `rgb(${Math.min(255,Math.round(r+(255-r)*amt))},${Math.min(255,Math.round(g+(255-g)*amt))},${Math.min(255,Math.round(b+(255-b)*amt))})`;
+  }
+  function darkenColor(hex, amt){
+    const {r,g,b} = hexToRgb(hex);
+    return `rgb(${Math.max(0,Math.round(r*(1-amt)))},${Math.max(0,Math.round(g*(1-amt)))},${Math.max(0,Math.round(b*(1-amt)))})`;
+  }
+
   function drawCar(x, y, w, h, color, facingDown, isPlayer, useGlow, glowColorOverride, stripeColor){
     ctx.save();
     ctx.translate(x,y);
@@ -1707,14 +1759,36 @@
     ctx.ellipse(0, h*0.42, w*0.55, 8, 0,0,Math.PI*2);
     ctx.fill();
 
+    // wheels peeking from under the body corners — drawn first so the body overlaps them slightly
+    ctx.fillStyle = 'rgba(15,15,18,0.9)';
+    const wheelW = w*0.14, wheelH = h*0.16;
+    [[-w/2+1, -h*0.28], [w/2-1-wheelW, -h*0.28], [-w/2+1, h*0.28-wheelH], [w/2-1-wheelW, h*0.28-wheelH]].forEach(([wx,wy])=>{
+      roundRect(wx, wy, wheelW, wheelH, 2);
+      ctx.fill();
+    });
+
     const r = 8;
     ctx.save();
     if (useGlow !== false){
       ctx.shadowColor = glowColorOverride || color;
       ctx.shadowBlur = isPlayer ? 16 : 10;
     }
-    ctx.fillStyle = color;
+    // gradient body fill instead of a flat color — a smooth light-to-dark gradient is the
+    // simplest, cheapest way to make a 2D shape read as dimensional rather than a flat sticker
+    const bodyGrad = ctx.createLinearGradient(-w/2, -h/2, w/2, h/2);
+    bodyGrad.addColorStop(0, lightenColor(color, 0.3));
+    bodyGrad.addColorStop(0.5, color);
+    bodyGrad.addColorStop(1, darkenColor(color, 0.24));
+    ctx.fillStyle = bodyGrad;
     roundRect(-w/2, -h/2, w, h, r);
+    ctx.fill();
+    ctx.restore();
+
+    // glossy roof highlight streak
+    ctx.save();
+    ctx.globalAlpha = 0.2;
+    ctx.fillStyle = '#ffffff';
+    roundRect(-w*0.26, -h/2+4, w*0.15, h-8, 6);
     ctx.fill();
     ctx.restore();
 
