@@ -373,7 +373,6 @@
     <!-- MAIN MENU -->
     <div class="screen active" id="screenMenu">
       <button id="muteBtn" style="position:absolute; top:18px; right:18px; width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2); color:#fff; font-size:14px; cursor:pointer;">🔊</button>
-      <button id="motionBtn" style="position:absolute; top:18px; right:58px; width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2); color:#fff; font-size:14px; cursor:pointer;">🎬</button>
       <h1>Overtake</h1>
       <div style="display:flex; gap:8px; margin-bottom:14px;">
         <div id="walletBadge" class="hud-box">💰 <span id="walletTxt">0</span></div>
@@ -510,14 +509,13 @@
   const retryBtn = document.getElementById('retryBtn');
   const shareBtn = document.getElementById('shareBtn');
   const muteBtn = document.getElementById('muteBtn');
-  const motionBtn = document.getElementById('motionBtn');
   const bestBadge = document.getElementById('bestBadge');
   const bestTxt = document.getElementById('bestTxt');
 
   // ---------- Sound (synthesized, no audio files needed) ----------
   let audioCtx = null;
   let muted = false;
-  let reducedMotion = false;
+  let reducedMotion = true; // kept permanently on — calmer crash shake, no slow-mo dip, softer combo glow
   function ensureAudio(){
     if (!audioCtx){
       try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
@@ -552,11 +550,6 @@
     muted = !muted;
     muteBtn.textContent = muted ? '🔇' : '🔊';
   });
-  motionBtn.addEventListener('click', ()=>{
-    reducedMotion = !reducedMotion;
-    motionBtn.style.opacity = reducedMotion ? '0.5' : '1';
-    motionBtn.title = reducedMotion ? 'Reduced motion: on' : 'Reduced motion: off';
-  });
 
   // ---------- Haptics (mobile-only, silently no-ops elsewhere) ----------
   function haptic(pattern){
@@ -583,7 +576,7 @@
       stars: false, dangerTint: 'rgba(233,75,75,0.06)'
     },
     tokyo: {
-      name: 'Tokyo Nights', cost: 0, unlocked: false,
+      name: 'Tokyo Nights', cost: 0, unlocked: true,
       swatch: 'linear-gradient(135deg,#ff2fd0 0%,#00e5ff 40%,#2a2a34 40%,#2a2a34 100%)',
       sky: ['#120c1e', '#1c1526', '#0a0714'],
       road: '#1a1420', edgeGlow: '#ff2fd0', edgeColor: '#ff2fd0',
@@ -628,7 +621,7 @@
       heatShimmer: true
     }
   };
-  let equippedSkin = 'stock';
+  let equippedSkin = 'tokyo';
 
   const CARS = {
     white:   { name: 'Stock White',  cost: 0,   unlocked: true,  color: '#ffffff', stripe: null,      glow: null },
@@ -1241,7 +1234,7 @@
     holdHint.style.opacity = (elapsed > 4) ? '0' : '1';
 
     distance += (speed*0.038) * dt; // purely cosmetic scaling — difficulty timers are all time-based, unaffected by this
-    dashOffset = (dashOffset + speed*dt) % 60;
+    dashOffset = (dashOffset + speed*dt) % 46;
     roadsideScroll = (roadsideScroll + speed*dt) % 100000;
 
     if (distance >= nextMilestone){
@@ -1503,7 +1496,6 @@
 
     const dividerX = roadLeft + roadW*0.48;
     ctx.save();
-    if (skin.dividerGlow){ ctx.shadowColor = skin.dividerGlow; ctx.shadowBlur = 10; }
     ctx.strokeStyle = skin.dividerColor;
     ctx.lineWidth = 4;
     ctx.setLineDash([26,20]);
