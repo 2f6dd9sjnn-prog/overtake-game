@@ -374,6 +374,7 @@
     <div class="screen active" id="screenMenu">
       <button id="muteBtn" style="position:absolute; top:18px; right:18px; width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2); color:#fff; font-size:14px; cursor:pointer;">🔊</button>
       <h1>Overtake</h1>
+      <button id="nameBadge" style="background:none; border:none; color:rgba(255,255,255,0.6); font-size:12px; margin:-6px 0 10px; cursor:pointer;">👤 <span id="nameText">Racer</span> ✏️</button>
       <div style="display:flex; gap:8px; margin-bottom:14px;">
         <div id="walletBadge" class="hud-box">💰 <span id="walletTxt">0</span></div>
         <div id="bestBadge" class="hud-box" style="display:none;">🏆 <span id="bestTxt">0</span>m</div>
@@ -441,13 +442,17 @@
         <div class="stat"><div class="num" id="finalCoins">0</div><div class="lbl">Coins</div></div>
         <div class="stat"><div class="num" id="finalOvertakes">0</div><div class="lbl">Overtakes</div></div>
       </div>
+      <div id="doubleCoinsAlert" style="width:100%; max-width:300px; background:rgba(255,203,61,0.1); border:1px solid rgba(255,203,61,0.4); border-radius:12px; padding:12px 16px; margin:4px 0 14px;">
+        <div style="font-size:13px; font-weight:700; color:#ffcb3d;">🎬 Double your coins from this run?</div>
+        <div id="doubleCoinsSub" style="font-size:11px; opacity:0.65; margin:3px 0 10px;">Watch a quick ad to turn 0 into 0.</div>
+        <button class="ghostBtn" id="watchAdBtn" style="width:100%; font-size:13px; padding:10px 0; border-color:rgba(255,203,61,0.5);">Watch Ad — Get 2x Coins</button>
+      </div>
       <div class="btnRow">
         <button class="bigBtn" id="retryBtn">Try Again</button>
         <button class="ghostBtn" id="shopBtn2">🛍️ Shop</button>
       </div>
       <div class="btnRow" style="margin-top:10px;">
         <button class="ghostBtn" id="shareBtn" style="font-size:12px; padding:9px 20px;">📋 Copy Score</button>
-        <button class="ghostBtn" id="watchAdBtn" style="font-size:12px; padding:9px 20px;">🎬 +25 Coins</button>
       </div>
     </div>
   </div>
@@ -513,8 +518,12 @@
   const retryBtn = document.getElementById('retryBtn');
   const shareBtn = document.getElementById('shareBtn');
   const watchAdBtn = document.getElementById('watchAdBtn');
+  const doubleCoinsSub = document.getElementById('doubleCoinsSub');
+  const doubleCoinsAlert = document.getElementById('doubleCoinsAlert');
   const removeAdsBtn = document.getElementById('removeAdsBtn');
   const muteBtn = document.getElementById('muteBtn');
+  const nameBadge = document.getElementById('nameBadge');
+  const nameText = document.getElementById('nameText');
   const bestBadge = document.getElementById('bestBadge');
   const bestTxt = document.getElementById('bestTxt');
 
@@ -555,6 +564,14 @@
   muteBtn.addEventListener('click', ()=>{
     muted = !muted;
     muteBtn.textContent = muted ? '🔇' : '🔊';
+  });
+  nameBadge.addEventListener('click', ()=>{
+    const next = prompt('Enter your racer name:', playerName);
+    if (next && next.trim()){
+      playerName = next.trim().slice(0, 16);
+      nameText.textContent = playerName;
+      logEvent('name_set', { name: playerName });
+    }
   });
 
   // ---------- Capacitor native-app detection ----------
@@ -632,6 +649,7 @@
   // ---------- High score (in-memory for this session) ----------
   let bestDistance = 0;
   let hasPlayedBefore = false;
+  let playerName = 'Racer'; // session-only, like the rest of this prototype's state
 
   // ---------- Progression / wallet / skins (in-memory for this prototype session) ----------
   // NOTE: this resets on page reload since browser storage APIs aren't used here.
@@ -930,8 +948,14 @@
     if (name==='achieve'){ screenAchieve.classList.add('active'); renderAchievements(); }
     if (name==='dead'){
       screenDead.classList.add('active');
-      watchAdBtn.disabled = false;
-      watchAdBtn.textContent = '🎬 +25 Coins';
+      if (runCoins > 0){
+        doubleCoinsAlert.style.display = 'block';
+        watchAdBtn.disabled = false;
+        watchAdBtn.textContent = 'Watch Ad — Get 2x Coins';
+        doubleCoinsSub.textContent = `Watch a quick ad to turn ${runCoins} into ${runCoins*2}.`;
+      } else {
+        doubleCoinsAlert.style.display = 'none';
+      }
     }
     overlay.classList.remove('hidden');
   }
@@ -959,17 +983,22 @@
     setTimeout(()=> shareBtn.textContent = '📋 Copy Score', 1600);
   });
   watchAdBtn.addEventListener('click', ()=>{
+    if (runCoins <= 0){ return; } // nothing to double
     watchAdBtn.disabled = true;
     watchAdBtn.textContent = '⏳ Loading…';
     showRewardedAd(
-      ()=>{ // reward granted
-        wallet += 25;
+      ()=>{ // reward granted — double this run's coins
+        const bonus = runCoins;
+        wallet += bonus;
+        runCoins += bonus;
         walletTxt.textContent = wallet;
-        logEvent('rewarded_ad_watched', { reward: 25 });
-        watchAdBtn.textContent = '✅ +25 Coins!';
+        finalCoins.textContent = runCoins;
+        logEvent('rewarded_ad_watched', { type: 'double_coins', bonus });
+        watchAdBtn.textContent = '✅ Coins Doubled!';
+        doubleCoinsSub.textContent = `You now have ${runCoins} coins from this run.`;
       },
       ()=>{ // ad unavailable
-        watchAdBtn.textContent = '🎬 +25 Coins';
+        watchAdBtn.textContent = 'Watch Ad — Get 2x Coins';
         watchAdBtn.disabled = false;
       }
     );
@@ -1024,6 +1053,7 @@
   let playerX, playerVisualX;
   let stamina = 1;
   const STAMINA_DRAIN = 0.4;
+  const COIN_RATE = 0.5; // in-run coin accumulation runs at half speed — makes the end-of-run 2x ad offer a real choice
   const STAMINA_REGEN = 0.95;
   let speed = 220;
   let baseSpeed = 220;
@@ -1432,7 +1462,7 @@
           stats.totalNearMisses++;
           comboTimer = COMBO_WINDOW;
           const mult = 1 + Math.min(combo-1, 4)*0.5;
-          const gain = Math.round(2 * mult); // near-misses now ride the same streak multiplier as overtakes
+          const gain = Math.round(2 * COIN_RATE * mult); // near-misses now ride the same streak multiplier as overtakes
           runCoins += gain;
           wallet += gain;
           sfx.nearMiss();
@@ -1457,7 +1487,7 @@
           if (t.type === 'truck'){ runTrucks++; stats.totalTrucks++; }
           comboTimer = COMBO_WINDOW;
           const mult = 1 + Math.min(combo-1, 4)*0.5;
-          const base = t.type === 'truck' ? 9 : 5; // trucks are riskier to pass, so they pay more
+          const base = (t.type === 'truck' ? 9 : 5) * COIN_RATE; // trucks are riskier to pass, so they pay more
           const gain = Math.round(base * mult);
           runCoins += gain;
           wallet += gain;
@@ -1485,8 +1515,9 @@
       if (!p.collected && dx < 30 && dy < 30){
         p.collected = true;
         focusActive = FOCUS_DURATION;
-        runCoins += 3;
-        wallet += 3;
+        const gain = Math.round(3 * COIN_RATE);
+        runCoins += gain;
+        wallet += gain;
         stats.totalFocusOrbs++;
         sfx.pickup();
         haptic(15);
@@ -1504,8 +1535,9 @@
       const dy = Math.abs(c.y - playerY);
       if (!c.collected && dx < 26 && dy < 26){
         c.collected = true;
-        runCoins += 2;
-        wallet += 2;
+        const gain = Math.max(1, Math.round(2 * COIN_RATE));
+        runCoins += gain;
+        wallet += gain;
         runCoinPickups++;
         sfx.coin();
         spawnParticles(cx, c.y, '#ffe14d', 6);
